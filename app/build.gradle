@@ -18,6 +18,11 @@ android {
         versionCode 6
         versionName "1.0.5"
 
+        // Fork Hermes: fixed MCP access token baked at build time (see
+        // McpConfigStore.accessToken). Set via -PMCP_ACCESS_TOKEN=... or the
+        // MCP_ACCESS_TOKEN environment variable. Empty = upstream behaviour.
+        buildConfigField "String", "MCP_ACCESS_TOKEN", "\"${project.findProperty('MCP_ACCESS_TOKEN') ?: System.getenv('MCP_ACCESS_TOKEN') ?: ''}\""
+
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
             useSupportLibrary = true

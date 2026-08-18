@@ -57,8 +57,14 @@ class McpServer @Inject constructor(
     }
 
     private fun serve() {
+        // Fork Hermes: bind address configurable (default loopback as upstream).
+        // Set OPENDROID_MCP_BIND=0.0.0.0 to expose the MCP server on the LAN/tailnet
+        // VPN. Intended for tailnet-only operation where network-level access control
+        // (WireGuard via Tailscale) is the security boundary. The x-opendroid-token
+        // check below still applies to every request regardless of bind address.
+        val bindAddress = System.getenv("OPENDROID_MCP_BIND") ?: LOOPBACK
         try {
-            ServerSocket(PORT, BACKLOG, InetAddress.getByName(LOOPBACK)).use { socket ->
+            ServerSocket(PORT, BACKLOG, InetAddress.getByName(bindAddress)).use { socket ->
                 serverSocket = socket
                 while (running.get()) {
                     try {

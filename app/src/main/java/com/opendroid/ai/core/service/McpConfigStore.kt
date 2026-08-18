@@ -2,6 +2,7 @@ package com.opendroid.ai.core.service
 
 import android.content.Context
 import android.content.SharedPreferences
+import com.opendroid.ai.BuildConfig
 import com.opendroid.ai.core.security.AndroidKeyStoreAeadCipher
 import com.opendroid.ai.core.security.KeystoreSecretRecords
 import com.opendroid.ai.core.security.SecretEnvelope
@@ -38,7 +39,8 @@ private data class StoredMcpEndpoint(
 @Singleton
 class McpConfigStore private constructor(
     private val records: KeystoreSecretRecords,
-    private val preferences: SharedPreferences
+    private val preferences: SharedPreferences,
+    private val buildTimeToken: String? = null
 ) {
 
     @Inject
@@ -49,11 +51,21 @@ class McpConfigStore private constructor(
             ),
             cipher = AndroidKeyStoreAeadCipher(KEY_ALIAS)
         ),
-        preferences = context.applicationContext.getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE)
+        preferences = context.applicationContext.getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE),
+        // Fork Hermes: token fixed at build time when MCP_ACCESS_TOKEN gradle
+        // property is set (see app/build.gradle). Empty = upstream behaviour
+        // (random token in Keystore, shown by no UI in v1.0.5).
+        buildTimeToken = BuildConfig.MCP_ACCESS_TOKEN
     )
 
     @Synchronized
     fun accessToken(): String {
+        // Fork Hermes: allow a fixed token baked at build time via BuildConfig.
+        // When MCP_ACCESS_TOKEN is set at build time (gradle property or env var),
+        // it takes precedence over the random Keystore-backed token so external
+        // harnesses on the tailnet can authenticate without on-device UI. The
+        // Keystore path remains as-is for upstream builds (empty build-time token).
+        buildTimeToken?.takeIf { it.isNotEmpty() }?.let { return it }
         readSecret(TOKEN_KEY, TOKEN_AAD)?.takeIf { it.isNotEmpty() }?.let { return it }
         val token = UUID.randomUUID().toString().replace("-", "")
         writeSecret(TOKEN_KEY, TOKEN_AAD, token)
