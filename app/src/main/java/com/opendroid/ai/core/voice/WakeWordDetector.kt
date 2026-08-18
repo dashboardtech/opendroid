@@ -74,8 +74,10 @@ class WakeWordDetector(private val context: Context) {
             override fun onResults(results: Bundle?) {
                 val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
                 if (matches != null) {
+                    // Fork Hermes: wake word "Hermes" (+ legacy "OpenDroid" during transition)
                     for (match in matches) {
-                        if (match.contains("opendroid", ignoreCase = true) || match.contains("open droid", ignoreCase = true)) {
+                        val lower = match.lowercase()
+                        if (lower.contains("hermes") || lower.contains("opendroid") || lower.contains("open droid")) {
                             triggerWakeWord()
                             break
                         }
